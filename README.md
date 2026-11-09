@@ -50,6 +50,21 @@ One fixed protocol: 5-fold KFold, shuffled, seed 42, defined once in src/cv.py. 
 Shuffling is fine here because the houses are independent. With time-ordered data I’d use TimeSeriesSplit instead.
 RMSE is the main metric (it’s the competition metric). MAE and R² are reported alongside, because RMSE alone hides whether the error comes from many small misses or a few big ones.
 Baselines to beat: 0.399 (mean), 0.269 (neighborhood), 0.231 (quality), 0.1995 (quality + log area).
+
+Linear regression (Phase 4)
+
+statsmodels for inference (coefficients, p-values, assumption tests), scikit-learn for CV scores. Same model, two jobs.
+Breusch-Pagan rejects constant variance even with the log target, so p-values come from HC3 robust standard errors.
+Plain OLS on all 280 features (0.1495) is worse than Ridge (0.1315): too many correlated columns without a penalty. Regularization comes next.
+Remaining model issues: the extremes of quality and size are under-predicted, residuals cluster by neighborhood, and a few unusual sales (Partial, Abnorml) produce most of the large errors.
+
+Regularization and outliers (Phase 5)
+
+Regularization is the main improvement for linear models (OLS 0.1495 → Ridge/Lasso about 0.1315 on the same features). Ridge, Lasso and Elastic Net are equal within noise; Lasso uses only 86 features.
+Tuning alpha on the same folds was optimistic by about 0.002–0.005 compared with nested CV, so differences of that size between tuned models aren’t meaningful.
+Houses 524 and 1299 are removed from training only (partial sales of unfinished houses; better on 4 of 5 folds). They stay in every evaluation. The “remove everything above 4,000 sq ft” rule isn’t used, because 692 and 1183 are real sales.
+Huber regression (keeping every house) does as well or better, and is the safer choice when the data can’t be cleaned by hand.
+
 ## Setup
 
 Create and activate a Python environment, then install the project dependencies:

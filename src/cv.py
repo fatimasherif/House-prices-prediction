@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.model_selection import KFold, cross_val_score
 
 # One seed for the whole project; pass it as random_state everywhere
@@ -65,7 +66,8 @@ def log_result(model_name, feature_set, params, fold_scores, notes="", phase=Non
     }
     new_row = pd.DataFrame([row], columns=RESULT_COLUMNS)
 
-    if RESULTS_PATH.exists():
+    # An empty file (e.g. contents deleted by hand) counts as no file
+    if RESULTS_PATH.exists() and RESULTS_PATH.stat().st_size > 0:
         table = pd.read_csv(RESULTS_PATH)
         same_run = (table["model"] == model_name) & (table["feature_set"] == feature_set)
         table = pd.concat([table.loc[~same_run, RESULT_COLUMNS], new_row], ignore_index=True)
@@ -95,3 +97,32 @@ def show_results():
     cols = ["phase", "model", "feature_set", "n_features", "cv_rmse_mean", "cv_rmse_std", "notes"]
     table["notes"] = table["notes"].fillna("")
     return table.sort_values("cv_rmse_mean")[cols].reset_index(drop=True)
+
+
+def oof_predict(model, X, y, train_keep=None):
+    """Out-of-fold predictions on the shared folds.
+
+    Every house is predicted by a model that never saw it. train_keep is an
+    optional boolean mask of rows allowed in the TRAINING folds (e.g. to drop
+    outliers from training while still predicting them). The folds are always
+    the shared ones on the full data, so results stay comparable.
+    """
+    n = len(y)
+    train_keep = np.ones(n, dtype=bool) if train_keep is None else np.asarray(train_keep, dtype=bool)
+    pred = np.empty(n, dtype=float)
+    for tr_idx, va_idx in CV.split(X):
+        tr_idx = tr_idx[train_keep[tr_idx]]
+        fitted = clone(model).fit(X.iloc[tr_idx], y.iloc[tr_idx])
+        pred[va_idx] = fitted.predict(X.iloc[va_idx])
+    return pred
+
+
+def fold_rmse(y, pred, score_keep=None):
+    """RMSE per shared fold, optionally counting only the houses in score_keep."""
+    y = np.asarray(y, dtype=float)
+    score_keep = np.ones(len(y), dtype=bool) if score_keep is None else np.asarray(score_keep, dtype=bool)
+    scores = []
+    for _, va_idx in CV.split(y):
+        va_idx = va_idx[score_keep[va_idx]]
+        scores.append(np.sqrt(np.mean((y[va_idx] - pred[va_idx]) ** 2)))
+    return np.array(scores)

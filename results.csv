@@ -4,3 +4,13 @@ timestamp,phase,model,feature_set,params,n_features,cv_rmse_mean,cv_rmse_std,fol
 2026-11-09T03:43:13,3,LinearRegression,OverallQual,{},1,0.23083,0.00692,"[0.23109, 0.22716, 0.23509, 0.24059, 0.22022]",quality only
 2026-11-09T03:43:14,3,LinearRegression,OverallQual + log(GrLivArea),{},2,0.19946,0.01586,"[0.19924, 0.18834, 0.22279, 0.20957, 0.17738]",quality + size
 2026-11-09T03:43:16,3,"Ridge (alpha=10, untuned)",linear_full,"{""alpha"": 10}",280,0.13155,0.02399,"[0.1278, 0.12308, 0.17801, 0.11927, 0.10957]","all features, no tuning; reference for Phases 4-5"
+2026-11-09T03:58:40,4,OLS (LinearRegression),ols_subset,{},17,0.14603,0.02001,"[0.14896, 0.13308, 0.1813, 0.14485, 0.12195]","17 hand-picked features, logged areas"
+2026-11-09T03:58:42,4,OLS (LinearRegression),linear_full,{},280,0.14948,0.02651,"[0.1238, 0.12476, 0.19024, 0.13795, 0.17065]","all features, no regularization"
+2026-11-09T04:04:45,5,ElasticNetCV (nested),linear_full,"{""alpha_per_fold"": [0.0004893900918477494, 0.006210169418915616, 0.0009236708571873865, 0.0004893900918477494, 0.0006723357536499335]}",280,0.13347,0.02372,"[0.12364, 0.1201, 0.18003, 0.11488, 0.12868]",alpha chosen inside each training fold
+2026-11-09T04:04:52,5,OLS (17 features),train without 524 & 1299,{},17,0.14467,0.02055,"[0.14717, 0.13129, 0.1813, 0.14304, 0.12053]",scored on all houses; without the 4 big: 0.1350
+2026-11-09T04:04:52,5,Ridge (alpha=8.38),train without 524 & 1299,{},280,0.12767,0.02555,"[0.12594, 0.11196, 0.17746, 0.11398, 0.10902]",scored on all houses; without the 4 big: 0.1135
+2026-11-09T04:05:34,5,Huber (alpha=30),linear_full,"{""alpha"": ""30"", ""epsilon"": 1.35}",280,0.1261,0.02287,"[0.12886, 0.11348, 0.16933, 0.11275, 0.10606]",outliers kept; alpha tuned on the same folds
+2026-11-09T04:19:09,5,Ridge (alpha=8.38),linear_full,"{""alpha"": 8.376776400682925}",280,0.13157,0.02364,"[0.12742, 0.12346, 0.17746, 0.11926, 0.11026]",alpha tuned on the same folds
+2026-11-09T04:19:09,5,Lasso (alpha=0.000924),linear_full,"{""alpha"": 0.0009236708571873865}",86,0.13149,0.02567,"[0.13106, 0.12051, 0.18089, 0.11484, 0.11012]",alpha tuned on the same folds
+2026-11-09T04:19:10,5,RidgeCV (nested),linear_full,"{""alpha_per_fold"": [17.012542798525892, 8.376776400682925, 5.878016072274912, 11.93776641714437, 1.4251026703029992]}",280,0.13708,0.02063,"[0.12878, 0.12346, 0.17655, 0.11932, 0.13728]",alpha chosen inside each training fold
+2026-11-09T04:19:11,5,LassoCV (nested),linear_full,"{""alpha_per_fold"": [0.0004893900918477494, 0.0012689610031679222, 0.0009236708571873865, 0.0004893900918477494, 0.0006723357536499335]}",280,0.13363,0.02406,"[0.12364, 0.12008, 0.18089, 0.11488, 0.12868]",alpha chosen inside each training fold

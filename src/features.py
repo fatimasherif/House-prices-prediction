@@ -207,3 +207,35 @@ def make_tree_preprocessor():
         ("lot_frontage", LotFrontageImputer()),
         ("columns", columns),
     ])
+
+
+# ---------------------------------------------------------------------------
+# Small, readable feature set for OLS inference (Phase 4)
+# ---------------------------------------------------------------------------
+
+def make_ols_subset(df: pd.DataFrame) -> pd.DataFrame:
+    """17 hand-picked features with logs on the skewed areas.
+
+    Small enough to read every coefficient and p-value. Works on raw data
+    (it calls clean() first), so it can sit at the start of a Pipeline.
+    """
+    c = clean(df)
+    out = pd.DataFrame(index=c.index)
+    out["OverallQual"] = c["OverallQual"]
+    out["OverallCond"] = c["OverallCond"]
+    out["log_GrLivArea"] = np.log(c["GrLivArea"])
+    out["log1p_TotalBsmtSF"] = np.log1p(c["TotalBsmtSF"])
+    out["log_LotArea"] = np.log(c["LotArea"])
+    out["GarageCars"] = c["GarageCars"]
+    out["GarageArea"] = c["GarageArea"]
+    out["YearBuilt"] = c["YearBuilt"]
+    out["YearRemodAdd"] = c["YearRemodAdd"]
+    out["FullBath"] = c["FullBath"]
+    out["HalfBath"] = c["HalfBath"]
+    out["TotRmsAbvGrd"] = c["TotRmsAbvGrd"]
+    out["Fireplaces"] = c["Fireplaces"]
+    out["KitchenQual"] = c["KitchenQual"]
+    out["ExterQual"] = c["ExterQual"]
+    out["BsmtQual"] = c["BsmtQual"]
+    out["CentralAir_Y"] = (c["CentralAir"] == "Y").astype(int)
+    return out
