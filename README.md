@@ -25,10 +25,24 @@ the next available number rather than replacing or renaming existing work.
 
 ## Decision log
 
-- Python version: 3.14.5
-- Shared random seed: `SEED = 42`
+- Python version: 3.14.5, the project's active environment; all planned
+  libraries, including CatBoost, SHAP, and LightGBM, import successfully.
+- Shared random seed: `SEED = 42`, so splits and randomized models are
+  reproducible and comparisons vary by model rather than randomness.
 - Cross-validation score standard deviation: population standard deviation
-  (`ddof=0`)
+  (`ddof=0`), matching NumPy's default for fold-score arrays. For five folds,
+  sample standard deviation (`ddof=1`) is about 12% larger
+  (`sqrt(5/4) ≈ 1.118`).
+- Results schema: fixed columns include `n_features` so appended rows stay
+  aligned with the header; create a new results file rather than changing the
+  column layout.
+  Absent vs truly missing: NA is filled with “None”/0 only when the house really lacks the feature (no garage, no basement...). If the feature exists but a value is missing, the pipeline imputes it.
+LotFrontage: filled with the neighborhood median learned on the training fold, with the global median as a fallback.
+Quality scales mapped to numbers (Po=1 ... Ex=5) because their order matters; nominal categories are one-hot encoded for linear models and integer-coded for trees.
+MSSubClass and MoSold treated as categories; YrSold stays numeric.
+is_remodeled ignores houses built before 1950 with a remodel year of 1950 (the column’s floor, not a real remodel).
+Log1p only on skewed continuous columns (skew > 0.75, more than 10 distinct values), decided inside the pipeline.
+Two preprocessors: linear (log + scaling + one-hot) and tree (no log, no scaling, integer codes).
 
 ## Setup
 
@@ -40,8 +54,15 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-Start Jupyter from the project root to use the relative data paths in the
-notebooks.
+Notebook working directories can vary, so use `RAW_DIR` from `src.cv` instead
+of relying on relative paths to the raw data:
+
+```python
+import pandas as pd
+from src.cv import RAW_DIR
+
+train = pd.read_csv(RAW_DIR / "train.csv")
+```
 
 ## Data and results
 
