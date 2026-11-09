@@ -44,6 +44,12 @@ is_remodeled ignores houses built before 1950 with a remodel year of 1950 (the c
 Log1p only on skewed continuous columns (skew > 0.75, more than 10 distinct values), decided inside the pipeline.
 Two preprocessors: linear (log + scaling + one-hot) and tree (no log, no scaling, integer codes).
 
+Validation (Phase 3)
+
+One fixed protocol: 5-fold KFold, shuffled, seed 42, defined once in src/cv.py. RMSE on log price, reported as mean ± std. The same folds for every model, so differences come from the model and models can be compared fold by fold.
+Shuffling is fine here because the houses are independent. With time-ordered data I’d use TimeSeriesSplit instead.
+RMSE is the main metric (it’s the competition metric). MAE and R² are reported alongside, because RMSE alone hides whether the error comes from many small misses or a few big ones.
+Baselines to beat: 0.399 (mean), 0.269 (neighborhood), 0.231 (quality), 0.1995 (quality + log area).
 ## Setup
 
 Create and activate a Python environment, then install the project dependencies:

@@ -1,1 +1,6 @@
-timestamp,phase,model,feature_set,params,cv_rmse_mean,cv_rmse_std,fold_scores,n_features,notes
+timestamp,phase,model,feature_set,params,n_features,cv_rmse_mean,cv_rmse_std,fold_scores,notes
+2026-11-09T03:43:10,3,Dummy (mean),none,{},0,0.39878,0.02513,"[0.43324, 0.39584, 0.37537, 0.42101, 0.36845]",training-fold mean for every house
+2026-11-09T03:43:11,3,Neighborhood median,Neighborhood,{},1,0.26898,0.00937,"[0.27287, 0.26831, 0.26188, 0.28443, 0.2574]",location only
+2026-11-09T03:43:13,3,LinearRegression,OverallQual,{},1,0.23083,0.00692,"[0.23109, 0.22716, 0.23509, 0.24059, 0.22022]",quality only
+2026-11-09T03:43:14,3,LinearRegression,OverallQual + log(GrLivArea),{},2,0.19946,0.01586,"[0.19924, 0.18834, 0.22279, 0.20957, 0.17738]",quality + size
+2026-11-09T03:43:16,3,"Ridge (alpha=10, untuned)",linear_full,"{""alpha"": 10}",280,0.13155,0.02399,"[0.1278, 0.12308, 0.17801, 0.11927, 0.10957]","all features, no tuning; reference for Phases 4-5"
