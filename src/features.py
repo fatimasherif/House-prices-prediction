@@ -12,7 +12,8 @@ from sklearn.base import BaseEstimator, OneToOneFeatureMixin, TransformerMixin
 from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import (FunctionTransformer, OneHotEncoder, OrdinalEncoder,
+                                   PolynomialFeatures, StandardScaler)
 
 # Ordinal scales: the order carries meaning, so we map them to numbers
 QUALITY_MAP = {"None": 0, "Po": 1, "Fa": 2, "TA": 3, "Gd": 4, "Ex": 5}
@@ -170,8 +171,12 @@ class SkewedLog1p(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         return X
 
 
-def make_linear_preprocessor():
-    """Raw data -> clean -> impute -> log skewed -> scale numerics, one-hot categoricals."""
+def make_linear_preprocessor(poly_features=None, poly_degree=2):
+    """Raw data -> clean -> impute -> log skewed -> scale numerics, one-hot categoricals.
+
+    poly_features: optional list of numeric columns whose squares and pairwise
+    products (degree 2 up to poly_degree) are ADDED to the usual features.
+    """
     numeric = Pipeline([
         ("impute", SimpleImputer(strategy="median")),
         ("log_skewed", SkewedLog1p(threshold=0.75)),
@@ -181,10 +186,21 @@ def make_linear_preprocessor():
         ("impute", SimpleImputer(strategy="most_frequent")),
         ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
     ])
-    columns = ColumnTransformer([
+    branches = [
         ("num", numeric, make_column_selector(dtype_include="number")),
         ("cat", categorical, make_column_selector(dtype_exclude="number")),
-    ])
+    ]
+    if poly_features:
+        poly = Pipeline([
+            ("impute", SimpleImputer(strategy="median")),
+            ("log_skewed", SkewedLog1p(threshold=0.75)),
+            ("scale", StandardScaler()),
+            # degree=(2, d): only the new terms; the plain features are already in "num"
+            ("poly", PolynomialFeatures(degree=(2, poly_degree), include_bias=False)),
+            ("scale_poly", StandardScaler()),
+        ])
+        branches.append(("poly", poly, list(poly_features)))
+    columns = ColumnTransformer(branches)
     return Pipeline([
         ("clean", FunctionTransformer(clean)),
         ("lot_frontage", LotFrontageImputer()),
@@ -239,3 +255,24 @@ def make_ols_subset(df: pd.DataFrame) -> pd.DataFrame:
     out["BsmtQual"] = c["BsmtQual"]
     out["CentralAir_Y"] = (c["CentralAir"] == "Y").astype(int)
     return out
+
+
+# ---------------------------------------------------------------------------
+# CatBoost: native categorical handling, no one-hot and no integer codes
+# ---------------------------------------------------------------------------
+
+def fill_categorical_na(df: pd.DataFrame) -> pd.DataFrame:
+    """CatBoost needs categories as plain strings: missing ones become "Missing"."""
+    df = df.copy()
+    cats = df.select_dtypes(exclude="number").columns
+    df[cats] = df[cats].fillna("Missing").astype(str).astype(object)
+    return df
+
+
+def make_catboost_preprocessor():
+    """Raw data -> clean -> LotFrontage imputation -> categories as strings."""
+    return Pipeline([
+        ("clean", FunctionTransformer(clean)),
+        ("lot_frontage", LotFrontageImputer()),
+        ("fill_cats", FunctionTransformer(fill_categorical_na)),
+    ])

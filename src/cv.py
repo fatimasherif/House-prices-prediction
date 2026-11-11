@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "data" / "raw"
 FIGURES_DIR = ROOT / "reports" / "figures"
 RESULTS_PATH = ROOT / "results.csv"
+PROCESSED_DIR = ROOT / "data" / "processed"
+OOF_PATH = PROCESSED_DIR / "oof_predictions.csv"
 
 # The validation protocol, fixed for the whole project.
 # Same splitter object everywhere -> every model sees exactly the same 5 folds.
@@ -126,3 +128,33 @@ def fold_rmse(y, pred, score_keep=None):
         va_idx = va_idx[score_keep[va_idx]]
         scores.append(np.sqrt(np.mean((y[va_idx] - pred[va_idx]) ** 2)))
     return np.array(scores)
+
+
+def save_oof(key, pred):
+    """Store one model's out-of-fold predictions (one column per model, train row order).
+
+    Used later for blending and error analysis.
+    """
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    if OOF_PATH.exists() and OOF_PATH.stat().st_size > 0:
+        table = pd.read_csv(OOF_PATH)
+    else:
+        table = pd.DataFrame(index=range(len(pred)))
+    table[key] = np.asarray(pred, dtype=float)
+    table.to_csv(OOF_PATH, index=False)
+
+
+def evaluate_oof(model, X, y, name, feature_set, train_keep=None, params=None, notes="",
+                 phase=None, n_features=None, log=True):
+    """Shared folds, optional training filter, scored on ALL houses; logs and saves the OOF predictions.
+
+    Returns (fold RMSEs, out-of-fold predictions).
+    """
+    pred = oof_predict(model, X, y, train_keep=train_keep)
+    scores = fold_rmse(y, pred)
+    print(f"{name} [{feature_set}]: RMSE {scores.mean():.4f} ± {scores.std():.4f} "
+          f"| folds {np.round(scores, 4).tolist()}")
+    if log:
+        log_result(name, feature_set, params or {}, scores, notes=notes, phase=phase, n_features=n_features)
+        save_oof(f"{name} | {feature_set}", pred)
+    return scores, pred
